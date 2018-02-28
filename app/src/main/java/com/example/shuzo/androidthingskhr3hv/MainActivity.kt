@@ -96,7 +96,10 @@ class MainActivity : Activity() {
             Log.e(TAG, "Unable to open UART device", e)
             null
         }
-        tcpHandler.post(createSocket)
+        for (i in 0..10) {
+            id = i.toByte()
+            uartComHandler.post(writeCmdServo)
+        }
     }
 
     private val writeCmdServo = Runnable {
@@ -111,8 +114,10 @@ class MainActivity : Activity() {
             cmd[1] = ((pos shr 7) and 0x007f).toByte() //POS_H
             cmd[2] = (pos and 0x007F).toByte() // POS_L
 
-            /* val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
-         Log.d("DATA",afPos.toString())*/
+            // Log 出力
+            val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
+            Log.d("DATA", afPos.toString())
+
             serialServo!!.write(cmd, RECV_SIZE)
             //serialServo.flush(UartDevice.FLUSH_OUT)
         } else {
