@@ -26,9 +26,9 @@ const val BAUD_RATE = 115200
 const val DATA_BITS = 8
 const val STOP_BITS = 1
 
-const val IP_ADDR = "192.168.43.181"
+const val IP_ADDR = "192.168.3.8"
 const val PORT = 55555
-const val RECV_SIZE = 3
+const val RECV_SIZE = 4
 
 var seekBarList: List<SeekBar> = emptyList()
 
@@ -43,7 +43,7 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
 
     override fun onProgressChanged(seekBar: SeekBar?, progress: Int, p2: Boolean) {
         id = seekBarList.indexOf(seekBar).toByte()
-        val posD : Double = ((progress / 100.0) + 0.5) * (9500.0 - 5500.0) + 5500.0
+        val posD: Double = ((progress / 100.0) + 0.5) * (9500.0 - 5500.0) + 5500.0
         pos = posD.toInt()
 
         uartComHandler.post(writeCmdServo)
@@ -156,7 +156,7 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
             Log.d("ID", id.toString())
             Log.d("pos", afPos.toString())
 
-            serialServo!!.write(cmd, RECV_SIZE)
+            serialServo!!.write(cmd, cmd.size)
             //serialServo.flush(UartDevice.FLUSH_OUT)
         } else {
             Log.e(TAG, "Unable to open UART device")
@@ -191,19 +191,25 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
                     id = strCmd[0].toInt()
                     rotate = strCmd[1].toInt()*/
 
-                    val dataBuf = tcpInput!!.readBytes(RECV_SIZE)
+                    val dataBuf = ByteArray(RECV_SIZE)
+                    tcpInput!!.read(dataBuf)
+                    /*for (value in dataBuf) {
+                        Log.d("READ", value.toString())
+                    }
+                    Log.d("READ", "END")*/
 
                     subCMD = dataBuf[0]
                     id = dataBuf[1]
                     rotate = (dataBuf[2].toInt() shl 8) or dataBuf[3].toInt()
                     // TODO : ↑グローバルな値に保存するのは正しくない？
 
+                    Log.d("rotate", rotate.toString())
                     pos = (((rotate / 270) + 0.5) * (9500 - 5500) + 5500).toInt()
 
                     Log.d("id", id.toString())
                     Log.d("pos", pos.toString())
 
-                    uartComHandler.post(writeCmdServo)
+                    // uartComHandler.post(writeCmdServo)
                 } else {
                     throw IllegalStateException()
                 }
