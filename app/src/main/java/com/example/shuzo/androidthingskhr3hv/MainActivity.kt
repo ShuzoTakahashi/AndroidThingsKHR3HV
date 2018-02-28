@@ -96,6 +96,7 @@ class MainActivity : Activity() {
             Log.e(TAG, "Unable to open UART device", e)
             null
         }
+        tcpHandler.post(createSocket)
     }
 
     private val writeCmdServo = Runnable {
@@ -125,6 +126,7 @@ class MainActivity : Activity() {
             socket = Socket(IP_ADDR, PORT)
             tcpReader = BufferedReader(InputStreamReader(socket!!.getInputStream()))
             tcpInput = socket!!.getInputStream()
+            // TODO: ↓何故か代入の際にインスタンス生成するとエラーが発生する。要調査。
             val message = tcpHandler.obtainMessage(MSG_CONNECTION_SUCCESS)
             tcpHandler.sendMessage(message)
         } catch (e: IOException) {
