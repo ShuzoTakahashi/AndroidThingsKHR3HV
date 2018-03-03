@@ -26,7 +26,7 @@ const val BAUD_RATE = 115200
 const val DATA_BITS = 8
 const val STOP_BITS = 1
 
-const val IP_ADDR = "192.168.3.8"
+const val IP_ADDR = "192.168.43.181"
 const val PORT = 55555
 const val RECV_SIZE = 4
 
@@ -42,7 +42,7 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
     }
 
     override fun onProgressChanged(seekBar: SeekBar?, progress: Int, p2: Boolean) {
-        id = seekBarList.indexOf(seekBar).toByte()
+        id = seekBarList.indexOf(seekBar)
         val posD: Double = ((progress / 100.0) + 0.5) * (9500.0 - 5500.0) + 5500.0
         pos = posD.toInt()
 
@@ -57,7 +57,7 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
     private var tcpReader: BufferedReader? = null
     private var tcpInput: InputStream? = null
 
-    var id: Byte = 0
+    var id = 0
     var rotate: Int = 0
     var pos: Int = 7500
     var subCMD: Byte = 0
@@ -146,7 +146,7 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
 
             //サーボ０に0°を出す
             val cmd = ByteArray(3)
-            cmd[0] = 0x80.toByte() or id // 0x80でポジション
+            cmd[0] = 0x80.toByte() or id.toByte() // 0x80でポジション
             cmd[1] = ((pos shr 7) and 0x007f).toByte() //POS_H
             cmd[2] = (pos and 0x007F).toByte() // POS_L
 
@@ -186,21 +186,20 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
             try {
                 if (socket != null) {
 
-                    /*val cmd: String = tcpReader!!.readLine()
-                    val strCmd: List<String> = cmd.split(":")
-                    id = strCmd[0].toInt()
-                    rotate = strCmd[1].toInt()*/
-
+                    // val cmd: String = tcpReader!!.readLine()
                     val dataBuf = ByteArray(RECV_SIZE)
                     tcpInput!!.read(dataBuf)
-                    /*for (value in dataBuf) {
-                        Log.d("READ", value.toString())
-                    }
-                    Log.d("READ", "END")*/
+                    val cmd = String(dataBuf)
+                    val strCmd: List<String> = cmd.split(":")
+                    id = strCmd[0].toInt()
+                    rotate = strCmd[1].toInt()
+
+                    /*val dataBuf = ByteArray(RECV_SIZE)
+                    tcpInput!!.read(dataBuf)
 
                     subCMD = dataBuf[0]
                     id = dataBuf[1]
-                    rotate = (dataBuf[2].toInt() shl 8) or dataBuf[3].toInt()
+                    rotate = (dataBuf[2].toInt() shl 8) or dataBuf[3].toInt()*/
                     // TODO : ↑グローバルな値に保存するのは正しくない？
 
                     Log.d("rotate", rotate.toString())
@@ -209,7 +208,7 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
                     Log.d("id", id.toString())
                     Log.d("pos", pos.toString())
 
-                    // uartComHandler.post(writeCmdServo)
+                    uartComHandler.post(writeCmdServo)
                 } else {
                     throw IllegalStateException()
                 }
