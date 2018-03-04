@@ -1,6 +1,7 @@
 package com.example.shuzo.androidthingskhr3hv
 
 import android.app.Activity
+import android.app.Notification
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -26,11 +27,25 @@ const val BAUD_RATE = 115200
 const val DATA_BITS = 8
 const val STOP_BITS = 1
 
-const val IP_ADDR = "192.168.3.8"
+const val IP_ADDR = "192.168.43.181"
 const val PORT = 55555
 const val RECV_SIZE = 4
 
+val ACTION_WALK: Array<IntArray> = arrayOf(
+        intArrayOf(0, 7500), intArrayOf(5, 3)
+)
+val ACTION_BACK: Array<IntArray> = arrayOf(
+        intArrayOf(0, 7500), intArrayOf(5, 3)
+)
+val ACTION_RIGHT_TURN: Array<IntArray> = arrayOf(
+        intArrayOf(0, 7500), intArrayOf(5, 3)
+)
+val ACTION_LEFT_TURN : Array<IntArray> = arrayOf(
+        intArrayOf(0, 7500), intArrayOf(5, 3)
+)
+
 var seekBarList: List<SeekBar> = emptyList()
+
 
 // TODO : 例外処理する。
 class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
@@ -60,7 +75,21 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
     var id: Byte = 0
     var rotate: Int = 0
     var pos: Int = 7500
-    var subCMD: Byte = 0
+    var subCMD: Int = 0
+
+    var funcList: ArrayList<ByteArray>? = null
+
+    var actionIt: Int = 0
+    var actionStatu: Actions = Actions.NONE
+
+    enum class Actions {
+        NONE,
+        WALK,
+        BACK,
+        RIGHT_TURN,
+        LEFT_TURN
+    }
+
 
     private lateinit var enPin: Gpio
     private lateinit var uartComThread: HandlerThread
@@ -119,8 +148,22 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
             Log.e(TAG, "Unable to open UART device", e)
             null
         }
-        tcpHandler.post(createSocket)
-        // uartComHandler.post(writeCmdServo)
+        //tcpHandler.post(createSocket)
+
+        rotate = -90
+        Log.d("rotate", rotate.toString())
+        val doublPos: Double = (rotate.toDouble() / 270.0) + 0.5
+        Log.d("デバッグDpos", doublPos.toString())
+        pos = ((doublPos * 4500) + 5500).toInt()
+
+        while (true) {
+            for (i in 5..11) {
+                id = i.toByte()
+                uartComHandler.post(writeCmdServo)
+
+            }
+        }
+
 //        seekBar0.setOnSeekBarChangeListener(this)
 //        seekBar1.setOnSeekBarChangeListener(this)
 //        seekBar2.setOnSeekBarChangeListener(this)
@@ -145,7 +188,7 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
         if (serialServo != null) {
 
             //サーボ０に0°を出す
-            val cmd = ByteArray(3)
+            var cmd = ByteArray(3)
             cmd[0] = 0x80.toByte() or id // 0x80でポジション
             cmd[1] = ((pos shr 7) and 0x007f).toByte() //POS_H
             cmd[2] = (pos and 0x007F).toByte() // POS_L
@@ -153,11 +196,48 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
             // Log 出力
             val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
 
-            Log.d("ID", id.toString())
-            Log.d("pos", afPos.toString())
+            /* Log.d("ID", id.toString())
+             Log.d("pos", afPos.toString())*/
 
             serialServo!!.write(cmd, cmd.size)
             //serialServo.flush(UartDevice.FLUSH_OUT)
+
+
+            if (actionStatu != Actions.NONE) {
+                var cmdAction: Array<IntArray> = emptyArray()
+                when (actionStatu) {
+                    Actions.WALK -> {
+                        cmdAction = ACTION_WALK
+                    }
+                    Actions.BACK -> {
+                        cmdAction = ACTION_WALK
+                    }
+                    Actions.RIGHT_TURN -> {
+                        cmdAction = ACTION_RIGHT_TURN
+                    }
+                    Actions.LEFT_TURN -> {
+                        cmdAction = ACTION_LEFT_TURN
+                    }
+                }
+                if (cmdAction.size > actionIt) {
+                    actionIt++
+                    cmd = ByteArray(3)
+                    id = ACTION_WALK[actionIt][0].toByte()
+                    val subCmdPos = ACTION_WALK[actionIt][1]
+                    cmd[0] = 0x80.toByte() or id
+                    cmd[1] = ((subCmdPos shr 7) and 0x007f).toByte() //POS_H
+                    cmd[2] = (subCmdPos and 0x007F).toByte() // POS_L
+
+                    val doublPos: Double = (rotate.toDouble() / 270.0) + 0.5
+                    pos = ((doublPos * 4500) + 5500).toInt()
+                    serialServo!!.write(cmd, cmd.size)
+                } else {
+                    actionStatu = Actions.NONE
+                    actionIt = 0
+                }
+
+            }
+
         } else {
             Log.e(TAG, "Unable to open UART device")
         }
@@ -198,7 +278,26 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
                     }
                     Log.d("READ", "END")*/
 
-                    subCMD = dataBuf[0]
+                    subCMD = dataBuf[0].toInt()
+                    when (subCMD) {
+                        1 -> {
+                            actionIt = 0
+                            actionStatu = Actions.WALK
+                        }
+                        2 -> {
+                            actionIt = 0
+                            actionStatu = Actions.BACK
+                        }
+                        3 -> {
+                            actionIt = 0
+                            actionStatu = Actions.LEFT_TURN
+                        }
+                        4 -> {
+                            actionIt = 0
+                            actionStatu = Actions.RIGHT_TURN
+                        }
+
+                    }
 
 
                     id = dataBuf[1]
@@ -213,12 +312,14 @@ class MainActivity : Activity(), SeekBar.OnSeekBarChangeListener {
                     // TODO : ↑グローバルな値に保存するのは正しくない？
 
                     Log.d("rotate", rotate.toString())
-                    pos = (((rotate / 270) + 0.5) * (9500 - 5500) + 5500).toInt()
+                    val doublPos: Double = (rotate.toDouble() / 270.0) + 0.5
+                    Log.d("デバッグDpos", doublPos.toString())
+                    pos = ((doublPos * 4500) + 5500).toInt()
 
                     Log.d("id", id.toString())
                     Log.d("pos", pos.toString())
 
-                    // uartComHandler.post(writeCmdServo)
+                    uartComHandler.post(writeCmdServo)
                 } else {
                     throw IllegalStateException()
                 }
