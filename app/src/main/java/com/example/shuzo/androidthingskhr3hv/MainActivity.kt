@@ -6,7 +6,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Message
 import com.google.android.things.pio.Gpio
-import com.google.android.things.pio.PeripheralManagerService
+import com.google.android.things.pio.PeripheralManager
 import com.google.android.things.pio.UartDevice
 import java.io.IOException
 import android.util.Log
@@ -33,7 +33,7 @@ const val RECV_SIZE = 4
 class MainActivity : Activity() {
 
     private var serialServo: UartDevice? = null
-    private val service = PeripheralManagerService()
+    private val service = PeripheralManager.getInstance()
     private val TAG: String = "KHR3HV"
 
     private var socket: Socket? = null
@@ -84,13 +84,13 @@ class MainActivity : Activity() {
         enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHの時送信
 
         serialServo = try {
-            service.openUartDevice("UART0").also {
+            service.openUartDevice("UART0").also { uartDevice ->
                 // TODO: プロパティ形式で代入できないのはなぜ？
-                it.setBaudrate(BAUD_RATE) //通信速度
-                it.setDataSize(DATA_BITS) //ビット長
-                it.setParity(UartDevice.PARITY_EVEN) //偶数パリティ
-                it.setStopBits(STOP_BITS) //ストップビット
-                it.setHardwareFlowControl(UartDevice.HW_FLOW_CONTROL_NONE) //フロー制御なし
+                uartDevice.setBaudrate(BAUD_RATE) //通信速度
+                uartDevice.setDataSize(DATA_BITS) //ビット長
+                uartDevice.setParity(UartDevice.PARITY_EVEN) //偶数パリティ
+                uartDevice.setStopBits(STOP_BITS) //ストップビット
+                uartDevice.setHardwareFlowControl(UartDevice.HW_FLOW_CONTROL_NONE) //フロー制御なし
             }
         } catch (e: IOException) {
             Log.e(TAG, "Unable to open UART device", e)
