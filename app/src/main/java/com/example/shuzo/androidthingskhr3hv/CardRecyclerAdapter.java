@@ -1,5 +1,6 @@
 package com.example.shuzo.androidthingskhr3hv;
 
+// TODO : kotlinで書き直す
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
