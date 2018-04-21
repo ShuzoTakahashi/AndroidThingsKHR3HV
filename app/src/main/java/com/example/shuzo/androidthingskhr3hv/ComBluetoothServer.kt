@@ -17,8 +17,6 @@ class ComBluetoothServer(val btAdapter: BluetoothAdapter, val uuid: UUID, val ui
 
     private var btHandler: Handler
     private lateinit var socket: BluetoothSocket
-    private lateinit var writer: BufferedWriter
-    private lateinit var reader: BufferedReader
     private val TAG = ComBluetoothServer::class.java.simpleName
 
     private val runAccept = Runnable {
@@ -29,8 +27,6 @@ class ComBluetoothServer(val btAdapter: BluetoothAdapter, val uuid: UUID, val ui
             socket = btServerSocket.accept()
 
             uiHandler.sendMessage(uiHandler.obtainMessage(MSG_CONNECT_SUCCESSFULLY))
-            writer = BufferedWriter(OutputStreamWriter(socket.outputStream))
-            reader = BufferedReader(InputStreamReader(socket.inputStream))
         } catch (e: IOException) {
             Log.e(TAG, "Connection Failed !!")
             uiHandler.sendMessage(uiHandler.obtainMessage(MSG_CONNECT_FAILD))
@@ -46,54 +42,31 @@ class ComBluetoothServer(val btAdapter: BluetoothAdapter, val uuid: UUID, val ui
         btHandler.post(runAccept)
     }
 
-    fun sendCMD(func: (OutputStream) -> Unit) {
-        if (socket.isConnected) {
-            try {
-                btHandler.post { func(socket.outputStream) }
-            } catch (e: IOException) {
-                // TODO : 例外処理
+    // TODO : リネーム
+    fun action(func: (OutputStream, InputStream) -> Unit) {
+        try {
+            if (socket.isConnected) {
+                btHandler.post { func(socket.outputStream, socket.inputStream) }
+            } else {
+                Log.e(TAG, "接続されていない。")
+                uiHandler.sendMessage(uiHandler.obtainMessage(MSG_CONNECTION_FAILED))
+                throw IllegalStateException()
             }
-        } else {
-            Log.e(TAG, "接続されていない。")
-            throw IllegalStateException()
-        }
-    }
-
-    fun sendString(func: (BufferedWriter) -> Unit) {
-        if (socket.isConnected) {
-            try {
-                btHandler.post { func(writer) }
-            } catch (e: IOException) {
-                // TODO : 例外処理
-            }
-        } else {
-            Log.e(TAG, "接続されていない。")
-            throw IllegalStateException()
-        }
-    }
-
-    fun receiveString(): String {
-        if (socket.isConnected) {
-            // TODO : tryで囲んだほうが良い？
-            return reader.readText()
-        } else {
-            Log.e(TAG, "接続されていない。")
-            throw IllegalStateException()
+        } catch (e: IOException) {
+            uiHandler.sendMessage(uiHandler.obtainMessage(MSG_BT_IOEXCEPTION))
         }
     }
 
     fun close() {
         try {
             if (socket.isConnected) {
-                writer.close()
-                reader.close()
                 socket.close()
             }
         } catch (e: IOException) {
-            // TODO : 例外処理
             Log.e(TAG, "close()メソッドにてエラー発生")
+            uiHandler.sendMessage(uiHandler.obtainMessage(MSG_BT_IOEXCEPTION))
         }
-
     }
 
 }
+
