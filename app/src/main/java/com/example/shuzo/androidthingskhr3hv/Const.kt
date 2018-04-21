@@ -1,5 +1,7 @@
 package com.example.shuzo.androidthingskhr3hv
 
+import java.util.*
+
 /**
  * Created by shuzo on 2018/03/07.
  */
@@ -13,6 +15,16 @@ const val STOP_BITS = 1
 const val IP_ADDR = "192.168.43.181"
 const val PORT = 55555
 const val RECV_SIZE = 4
+
+const val MSG_CONNECT_SUCCESSFULLY = 11
+const val MSG_CONNECT_FAILD = -11
+const val MSG_SCAN_BT_DEVICE = 1221
+const val FOUND_DEVICE_NAME = "DESKTOP-9NOMLFM"
+
+const val BLUETOOTH_SDP_NAME = "AndroidThingsKHR3HV"
+val BLUETOOTH_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")!!
+//シリアルは00001101-0000-1000-8000-00805F9B34FB
+
 
 enum class Actions {
     NONE,
@@ -251,7 +263,7 @@ val ACTION_LEFT_TURN: Array<IntArray> = arrayOf(
         intArrayOf(13, 7675), intArrayOf(14, 7850),
         intArrayOf(15, 7300), intArrayOf(16, 7475)
 )
-val ACTION_RIGHT_TURN : Array<IntArray> = arrayOf(
+val ACTION_RIGHT_TURN: Array<IntArray> = arrayOf(
         intArrayOf(4, 7475), intArrayOf(3, 7375),
         intArrayOf(2, 7250), intArrayOf(1, 7637),
         intArrayOf(0, 7463), intArrayOf(12, 7475),
