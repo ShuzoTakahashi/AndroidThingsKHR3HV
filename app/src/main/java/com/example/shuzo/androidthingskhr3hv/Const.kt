@@ -7,6 +7,8 @@ import java.util.*
  */
 const val MSG_CONNECTION_SUCCESS = 111
 const val MSG_CONNECTION_FAILED = 222
+const val MSG_BT_IOEXCEPTION = 333
+const val MSG_TCP_IOEXCEPTION = 444
 
 const val BAUD_RATE = 115200
 const val DATA_BITS = 8
