@@ -1,13 +1,8 @@
 package com.example.shuzo.androidthingskhr3hv
 
 import android.app.Activity
-import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Message
-import com.google.android.things.pio.Gpio
+import android.os.*
 import com.google.android.things.pio.PeripheralManager
-import com.google.android.things.pio.UartDevice
 import java.io.IOException
 import android.util.Log
 import java.io.BufferedReader
@@ -15,27 +10,18 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.net.Socket
 import java.net.UnknownHostException
-import kotlin.experimental.and
-import kotlin.experimental.or
 
 // TODO : 例外処理する。
 class MainActivity : Activity() {
 
-    private var serialServo: UartDevice? = null
-    private val service = PeripheralManager.getInstance()
+    private lateinit var serialServo: SupportSerialServo
     private val TAG: String = "KHR3HV"
+    private lateinit var mainHandler: Handler
+
 
     private var socket: Socket? = null
     private var tcpReader: BufferedReader? = null
     private var tcpInput: InputStream? = null
-
-    var id: Byte = 0
-    var rotate: Int = 0
-    var subCMD: Byte = 0
-
-    private lateinit var enPin: Gpio
-    private lateinit var uartComThread: HandlerThread
-    private lateinit var uartComHandler: Handler
 
     private lateinit var tcpComThread: HandlerThread
     private lateinit var tcpHandler: Handler
@@ -43,13 +29,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        enPin = service.openGpio("BCM4") //送受信切り替えピン
-
-        // TODO: Uartを別スレッドで扱う必要はある？ メインはUIを持たないので別に不要では？
-        uartComThread = HandlerThread("UartComThread")
-        uartComThread.start()
-        uartComHandler = Handler(uartComThread.looper)
+        mainHandler = Handler(Looper.getMainLooper())
 
         tcpComThread = HandlerThread("TcpComThread")
         tcpComThread.start()
@@ -69,51 +49,13 @@ class MainActivity : Activity() {
             }
         }
 
-        // TODO : 送信するだけならHIGHのままでよい？
-        enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHの時送信
-
-        serialServo = try {
-            service.openUartDevice("UART0").also { uartDevice ->
-                // TODO: プロパティ形式で代入できないのはなぜ？
-                uartDevice.setBaudrate(BAUD_RATE) //通信速度
-                uartDevice.setDataSize(DATA_BITS) //ビット長
-                uartDevice.setParity(UartDevice.PARITY_EVEN) //偶数パリティ
-                uartDevice.setStopBits(STOP_BITS) //ストップビット
-                uartDevice.setHardwareFlowControl(UartDevice.HW_FLOW_CONTROL_NONE) //フロー制御なし
-            }
-        } catch (e: IOException) {
-            Log.e(TAG, "Unable to open UART device", e)
-            null
-        }
-        for (i in 0..10) {
-            id = i.toByte()
-            uartComHandler.post(writeCmdServo)
+        val service = PeripheralManager.getInstance()
+        serialServo = SupportSerialServo(service, mainHandler)
+        for (id in 0..10) {
+            serialServo.toRotate(id, 0)
         }
     }
 
-    private val writeCmdServo = Runnable {
-
-        if (serialServo != null) {
-
-            val pos = (rotate / 270) * (9500 - 5500) + 5500
-
-            //サーボ０に0°を出す
-            val cmd = ByteArray(3)
-            cmd[0] = 0x80.toByte() or id // 0x80でポジション
-            cmd[1] = ((pos shr 7) and 0x007f).toByte() //POS_H
-            cmd[2] = (pos and 0x007F).toByte() // POS_L
-
-            // Log 出力
-            val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
-            Log.d("DATA", afPos.toString())
-
-            serialServo!!.write(cmd, RECV_SIZE)
-            //serialServo.flush(UartDevice.FLUSH_OUT)
-        } else {
-            Log.e(TAG, "Unable to open UART device")
-        }
-
-    }
 
     private val createSocket = Runnable {
         try {
@@ -144,15 +86,11 @@ class MainActivity : Activity() {
                     rotate = strCmd[1].toInt()*/
 
                     val dataBuf = tcpInput!!.readBytes(RECV_SIZE)
-                    subCMD = dataBuf[0]
-                    id = dataBuf[1]
-                    rotate = (dataBuf[2].toInt() shl 8) + dataBuf[3]
-                    // TODO : ↑グローバルな値に保存するのは正しくない？
+                    val subCMD = dataBuf[0]
+                    val id = dataBuf[1].toInt()
+                    val rotate = (dataBuf[2].toInt() shl 8) + dataBuf[3]
 
-                    Log.d("id", id.toString())
-                    Log.d("rotate", rotate.toString())
-
-                    uartComHandler.post(writeCmdServo)
+                    serialServo.toRotate(id, rotate)
                 } else {
                     throw IllegalStateException()
                 }

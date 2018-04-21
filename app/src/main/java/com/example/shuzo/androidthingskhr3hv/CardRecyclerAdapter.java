@@ -54,7 +54,7 @@ class CardRecyclerAdapter extends RecyclerView.Adapter<CardRecyclerAdapter.VH> {
         holder.rotateSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(final SeekBar seekBar, int progress, boolean fromUser) {
-                supportSerialServo.servoToRotate((byte) position, progress);
+                supportSerialServo.toRotate((byte) position, progress);
             }
 
             @Override
