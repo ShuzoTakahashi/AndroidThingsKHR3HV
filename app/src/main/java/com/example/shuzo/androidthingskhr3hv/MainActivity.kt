@@ -2,8 +2,11 @@ package com.example.shuzo.androidthingskhr3hv
 
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
+import android.content.Intent
 import android.os.*
 import com.google.android.things.pio.PeripheralManager
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 // TODO : 例外処理する。
 class MainActivity : Activity() {
@@ -16,12 +19,13 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+
         val uiHandler = object : Handler(Looper.getMainLooper()) {
             override fun handleMessage(msg: Message?) {
                 when (msg!!.what) {
 
                     MSG_CONNECTION_SUCCESS -> {
-                        recvServoCmd()
+                        //recvServoCmd()
                     }
 
                     MSG_CONNECTION_FAILED -> {
@@ -31,32 +35,28 @@ class MainActivity : Activity() {
             }
         }
 
-        comBluetoothServer = ComBluetoothServer(BluetoothAdapter.getDefaultAdapter(), BLUETOOTH_UUID, uiHandler)
 
 
         val service = PeripheralManager.getInstance()
         serialServo = SupportSerialServo(service, uiHandler)
-        for (id in 0..10) {
-            serialServo.toRotate(id, 0)
-        }
+        (0..17).forEach { serialServo.toRotate(it, 0) }
+        //serialServo.motionCmd(KHR_CMD_WALK)
     }
 
     // TODO : リネーム
     fun recvServoCmd() {
         comBluetoothServer.action { _, inputStream ->
+            val reader = BufferedReader(InputStreamReader(inputStream))
             while (true) {
-                /*val cmd: String = tcpReader!!.readLine()
-                val strCmd: List<String> = cmd.split(":")
-                id = strCmd[0].toInt()
-                rotate = strCmd[1].toInt()*/
-
-                val dataBuf = inputStream.readBytes(RECV_SIZE)
-
+                /*val dataBuf = inputStream.readBytes(RECV_SIZE)
                 val subCMD = dataBuf[0]
                 val id = dataBuf[1].toInt()
-                val rotate = (dataBuf[2].toInt() shl 8) + dataBuf[3]
+                val rotate = (dataBuf[2].toInt() shl 8) + dataBuf[3]*/
 
-                serialServo.toRotate(id, rotate)
+                val cmd = reader.readLine()
+                if (cmd == "CONTROL_MENU_FORWARD") {
+                    (0..10).forEach { serialServo.toRotate(it, 0) }
+                }
 
             }
         }

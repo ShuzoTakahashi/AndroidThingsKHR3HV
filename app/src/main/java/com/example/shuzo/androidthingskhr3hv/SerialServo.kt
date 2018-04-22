@@ -13,10 +13,11 @@ import kotlin.experimental.or
  * Created by shuzo on 2018/03/07.
  */
 
-class SupportSerialServo(private val service:PeripheralManager,val handler: Handler) {
-    private var serialServo: UartDevice? = null
+class SupportSerialServo(private val service: PeripheralManager, val handler: Handler) {
 
+    private var serialServo: UartDevice? = null
     private var enPin: Gpio = service.openGpio("BCM4") //送受信切り替えピン HIGHで送信,LOWで受信
+
     private var uartComThread: HandlerThread = HandlerThread("UartComThread")
     private var uartComHandler: Handler
     private val TAG = "UartThread"
@@ -36,14 +37,15 @@ class SupportSerialServo(private val service:PeripheralManager,val handler: Hand
             }
         } catch (e: IOException) {
             Log.e(TAG, "Unable to open UART device", e)
+            handler.sendMessage(handler.obtainMessage(MSG_UART_IOEXCEPTION))
             null
         }
     }
 
     fun toPosData(id: Int, PosData: Int) {
+        try {
+            if (serialServo != null) {
 
-        if (serialServo != null) {
-            try {
                 enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHにセット(送信)
                 uartComHandler.post {
 
@@ -60,25 +62,54 @@ class SupportSerialServo(private val service:PeripheralManager,val handler: Hand
                     serialServo?.write(cmd, cmd.size)
                     serialServo?.flush(UartDevice.FLUSH_OUT)
                 }
-            } catch (e: IOException) {
-                //TODO
+            } else {
+                Log.e(TAG, "Unable to open UART device")
+                throw IllegalStateException()
             }
+        } catch (e: IOException) {
+            Log.e(TAG, "IOException", e)
+            handler.sendMessage(handler.obtainMessage(MSG_UART_IOEXCEPTION))
 
-        } else {
-            Log.e(TAG, "Unable to open UART device")
         }
     }
 
     fun toRotate(id: Int, rotate: Int) {
         val parRotate: Double = (rotate.toDouble() / 270.0) + 0.5
         val pos = ((parRotate * 4000) + 5500).toInt()
-        toPosData(id,pos)
+        toPosData(id, pos)
+    }
+
+    fun motionCmd(cmd: Int) {
+        when (cmd) {
+            KHR_CMD_WALK -> {
+                for (pos in ACTION_WALK){
+                    toPosData(pos[0],pos[1])
+                }
+            }
+
+            KHR_CMD_TRUN_RIGHT -> {
+                for (pos in ACTION_TURN_RIGHT){
+                    toPosData(pos[0],pos[1])
+                }
+            }
+
+            KHR_CMD_TURN_LEFT -> {
+                for (pos in ACTION_TURN_LEFT){
+                    toPosData(pos[0],pos[1])
+                }
+            }
+
+            KHR_CMD_BACK -> {
+                for (pos in ACTION_BACK){
+                    toPosData(pos[0],pos[1])
+                }
+            }
+        }
     }
 
     fun close() {
-
         if (serialServo != null) {
-            serialServo!!.close()
+            serialServo?.close()
         }
     }
 }

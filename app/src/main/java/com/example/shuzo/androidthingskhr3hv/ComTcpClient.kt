@@ -1,6 +1,5 @@
 package com.example.shuzo.androidthingskhr3hv
 
-import android.bluetooth.BluetoothSocket
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
