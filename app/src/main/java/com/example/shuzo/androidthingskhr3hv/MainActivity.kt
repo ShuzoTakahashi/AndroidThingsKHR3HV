@@ -1,9 +1,8 @@
 package com.example.shuzo.androidthingskhr3hv
 
 import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.content.Intent
 import android.os.*
+import android.util.Log
 import com.google.android.things.pio.PeripheralManager
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -37,8 +36,9 @@ class MainActivity : Activity() {
 
 
 
-        val service = PeripheralManager.getInstance()
-        serialServo = SupportSerialServo(service, uiHandler)
+        val manager = PeripheralManager.getInstance()
+        Log.d(TAG,manager.uartDeviceList.toString())
+        serialServo = SupportSerialServo(manager, uiHandler)
         (0..17).forEach { serialServo.toRotate(it, 0) }
         //serialServo.motionCmd(KHR_CMD_WALK)
     }
