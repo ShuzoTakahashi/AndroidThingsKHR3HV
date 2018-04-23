@@ -82,6 +82,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
             KHR_CMD_WALK -> {
                 for (pos in ACTION_WALK) {
                     toPosData(pos[0], pos[1])
+                    Thread.sleep(100)
                 }
             }
 
@@ -108,6 +109,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
     fun close() {
         if (servoChain != null) {
             servoChain?.close()
+            enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW)
         }
     }
 }

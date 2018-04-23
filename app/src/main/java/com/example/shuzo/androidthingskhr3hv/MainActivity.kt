@@ -39,8 +39,8 @@ class MainActivity : Activity() {
         val manager = PeripheralManager.getInstance()
         Log.d(TAG,manager.uartDeviceList.toString())
         serialServo = SupportSerialServo(manager, uiHandler)
-        (0..17).forEach { serialServo.toRotate(it, 0) }
-        //serialServo.motionCmd(KHR_CMD_WALK)
+        //(0..17).forEach { serialServo.toPosData(it, 8000) }
+        serialServo.motionCmd(KHR_CMD_WALK)
     }
 
     // TODO : リネーム
@@ -60,6 +60,11 @@ class MainActivity : Activity() {
 
             }
         }
+    }
+
+    override fun onDestroy() {
+        serialServo.close()
+        super.onDestroy()
     }
 
 }
