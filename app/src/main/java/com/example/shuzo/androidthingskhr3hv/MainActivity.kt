@@ -18,7 +18,6 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
         val uiHandler = object : Handler(Looper.getMainLooper()) {
             override fun handleMessage(msg: Message?) {
                 when (msg!!.what) {
@@ -34,13 +33,12 @@ class MainActivity : Activity() {
             }
         }
 
-
-
         val manager = PeripheralManager.getInstance()
         Log.d(TAG,manager.uartDeviceList.toString())
         serialServo = SupportSerialServo(manager, uiHandler)
         //(0..17).forEach { serialServo.toPosData(it, 8000) }
-        serialServo.motionCmd(KHR_CMD_WALK)
+        // serialServo.motionCmd(KHR_CMD_WALK)
+        Log.d(TAG,serialServo.getAllPos().toString())
     }
 
     // TODO : リネーム
@@ -48,6 +46,7 @@ class MainActivity : Activity() {
         comBluetoothServer.action { _, inputStream ->
             val reader = BufferedReader(InputStreamReader(inputStream))
             while (true) {
+
                 /*val dataBuf = inputStream.readBytes(RECV_SIZE)
                 val subCMD = dataBuf[0]
                 val id = dataBuf[1].toInt()
@@ -57,7 +56,6 @@ class MainActivity : Activity() {
                 if (cmd == "CONTROL_MENU_FORWARD") {
                     (0..10).forEach { serialServo.toRotate(it, 0) }
                 }
-
             }
         }
     }

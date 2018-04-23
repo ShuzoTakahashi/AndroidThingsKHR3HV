@@ -39,6 +39,50 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         }
     }
 
+    fun getAllPos(): ArrayList<Int> {
+        val posList = ArrayList<Int>()
+
+        (0..16).forEach { id ->
+            posList[id] = getPos(id)
+        }
+        return posList
+    }
+
+    fun getPos(id: Int): Int {
+        val readPosBytes = ByteArray(4)
+        val writeCmdBytes = ByteArray(2)
+        var rePos = 0
+
+        try {
+            if (servoChain != null) {
+                ioHandler.post {
+
+                    writeCmdBytes[0] = (0xA0 + id).toByte()
+                    writeCmdBytes[1] = 0x05.toByte()
+
+                    enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHにセット(送信)
+                    servoChain?.write(writeCmdBytes, writeCmdBytes.size)
+                    servoChain?.flush(UartDevice.FLUSH_OUT)
+
+                    enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW) // LOWにセット(受信)
+                    servoChain?.read(readPosBytes, readPosBytes.size)
+                    rePos = ((readPosBytes[2].toInt() shl 7) and 0x3F80) or (readPosBytes[3].toInt() and 0x007f)
+
+                    // Log 出力
+                    Log.d("id", id.toString())
+                    Log.d("pos", rePos.toString())
+                }
+            } else {
+                Log.e(tag, "Unable to open UART device")
+                throw IllegalStateException()
+            }
+        } catch (e: IOException) {
+            Log.e(tag, "IOException", e)
+            handler.sendMessage(handler.obtainMessage(MSG_UART_IOEXCEPTION))
+        }
+        return rePos
+    }
+
     fun toPosData(id: Int, PosData: Int) {
         try {
             if (servoChain != null) {
@@ -51,7 +95,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
                     cmd[2] = (PosData and 0x007F).toByte() // POS_L
 
                     servoChain?.write(cmd, cmd.size)
-                    servoChain?.flush(UartDevice.FLUSH_OUT)
+                    servoChain?.flush(UartDevice.FLUSH_IN_OUT)
 
                     // Log 出力
                     val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
@@ -66,7 +110,6 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         } catch (e: IOException) {
             Log.e(tag, "IOException", e)
             handler.sendMessage(handler.obtainMessage(MSG_UART_IOEXCEPTION))
-
         }
     }
 
