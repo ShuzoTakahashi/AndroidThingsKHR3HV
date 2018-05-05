@@ -18,6 +18,13 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // TODO: データのズレを修正する。汚いので要修正。
+        for (posd in ACTION_WALK) {
+            posd[1] = ((posd[1] - 7500) * 3) + (7500+ NEUTRAL[posd[0]])
+            print(posd[0].toString() + " : " + posd[1].toString() + "\n")
+        }
+
+
         val uiHandler = object : Handler(Looper.getMainLooper()) {
             override fun handleMessage(msg: Message?) {
                 when (msg!!.what) {
@@ -36,9 +43,9 @@ class MainActivity : Activity() {
         val manager = PeripheralManager.getInstance()
         Log.d(TAG,manager.uartDeviceList.toString())
         serialServo = SupportSerialServo(manager, uiHandler)
-        //(0..17).forEach { serialServo.toPosData(it, 8000) }
-        // serialServo.motionCmd(KHR_CMD_WALK)
-        Log.d(TAG,serialServo.getAllPos().toString())
+        //(0..16).forEach { serialServo.toPosData(it, 7500+ NEUTRAL[it]) }
+        serialServo.motionCmd(KHR_CMD_WALK)
+        //Log.d(TAG,serialServo.getAllPos().toString())
     }
 
     // TODO : リネーム

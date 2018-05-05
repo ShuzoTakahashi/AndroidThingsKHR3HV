@@ -40,10 +40,10 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
     }
 
     fun getAllPos(): ArrayList<Int> {
-        val posList = ArrayList<Int>()
+        val posList = ArrayList<Int>(17)
 
         (0..16).forEach { id ->
-            posList[id] = getPos(id)
+            posList.add(getPos(id))
         }
         return posList
     }
@@ -57,7 +57,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
             if (servoChain != null) {
                 ioHandler.post {
 
-                    writeCmdBytes[0] = (0xA0 + id).toByte()
+                    writeCmdBytes[0] = (0xA0 or id).toByte()
                     writeCmdBytes[1] = 0x05.toByte()
 
                     enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHにセット(送信)
@@ -66,6 +66,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
 
                     enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW) // LOWにセット(受信)
                     servoChain?.read(readPosBytes, readPosBytes.size)
+                    servoChain?.flush(UartDevice.FLUSH_IN)
                     rePos = ((readPosBytes[2].toInt() shl 7) and 0x3F80) or (readPosBytes[3].toInt() and 0x007f)
 
                     // Log 出力
@@ -95,7 +96,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
                     cmd[2] = (PosData and 0x007F).toByte() // POS_L
 
                     servoChain?.write(cmd, cmd.size)
-                    servoChain?.flush(UartDevice.FLUSH_IN_OUT)
+                    servoChain?.flush(UartDevice.FLUSH_OUT)
 
                     // Log 出力
                     val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
@@ -116,7 +117,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
     fun toRotate(id: Int, rotate: Int) {
         //中心を0°として扱う
         val parRotate: Double = (rotate.toDouble() / 270.0) + 0.5
-        val pos = ((parRotate * 4000) + 5500).toInt()
+        val pos = ((parRotate * 8000) + 3500).toInt()
         toPosData(id, pos)
     }
 

@@ -29,10 +29,9 @@ const val MSG_CONNECT_FAILD = -11
 const val MSG_SCAN_BT_DEVICE = 1221
 const val FOUND_DEVICE_NAME = "DESKTOP-9NOMLFM"
 
-const val BLUETOOTH_SDP_NAME = "AndroidThingsKHR3HV"
+const val BLUETOOTH_SDP_NAME =  "AndroidThingsKHR3HV"
 val BLUETOOTH_UUID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!!
 //シリアルは00001101-0000-1000-8000-00805F9B34FB
-
 
 enum class Actions {
     NONE,
@@ -41,6 +40,9 @@ enum class Actions {
     RIGHT_TURN,
     LEFT_TURN
 }
+
+//TODO リネーム
+val NEUTRAL: Array<Int> = arrayOf(0,568,1707,0,0,-2686,2634,1428,383,-1428,-2634,2686,0,0,-1707,-568,0)
 
 val ACTION_WALK: Array<IntArray> = arrayOf(
         intArrayOf(0, 7500), intArrayOf(4, 7500),
@@ -64,6 +66,66 @@ val ACTION_WALK: Array<IntArray> = arrayOf(
 
         intArrayOf(4, 7562), intArrayOf(3, 7350),
         intArrayOf(2, 7200), intArrayOf(1, 7687),
+        intArrayOf(0, 7562), intArrayOf(12, 7660),
+        intArrayOf(13, 7875), intArrayOf(14, 8050),
+        intArrayOf(15, 7300), intArrayOf(16, 7612),
+
+        intArrayOf(4, 7562), intArrayOf(3, 7350),
+        intArrayOf(2, 7200), intArrayOf(1, 7675),
+        intArrayOf(0, 7562), intArrayOf(12, 7600),
+        intArrayOf(13, 7800), intArrayOf(14, 7800),
+        intArrayOf(15, 7463), intArrayOf(16, 7612),
+
+        intArrayOf(4, 7500), intArrayOf(3, 7375),
+        intArrayOf(2, 7200), intArrayOf(1, 7725),
+        intArrayOf(0, 7425), intArrayOf(12, 7500),
+        intArrayOf(13, 7725), intArrayOf(14, 7800),
+        intArrayOf(15, 7388), intArrayOf(16, 7500),
+
+        intArrayOf(4, 7488), intArrayOf(3, 7562),
+        intArrayOf(2, 7325), intArrayOf(1, 7725),
+        intArrayOf(0, 7450), intArrayOf(12, 7475),
+        intArrayOf(13, 7625), intArrayOf(14, 7800),
+        intArrayOf(15, 7300), intArrayOf(16, 7450),
+
+        intArrayOf(4, 7438), intArrayOf(3, 7425),
+        intArrayOf(2, 7075), intArrayOf(1, 7750),
+        intArrayOf(0, 7425), intArrayOf(12, 7438),
+        intArrayOf(13, 7650), intArrayOf(13, 7800),
+        intArrayOf(15, 7325), intArrayOf(16, 7425),
+
+        intArrayOf(4, 7400), intArrayOf(3, 7125),
+        intArrayOf(2, 6950), intArrayOf(1, 7700),
+        intArrayOf(0, 7388), intArrayOf(12, 7438),
+        intArrayOf(13, 7650), intArrayOf(14, 7800),
+        intArrayOf(15, 73250), intArrayOf(16, 7438),
+
+        intArrayOf(4, 7400), intArrayOf(3, 7200),
+        intArrayOf(2, 7200), intArrayOf(1, 7537),
+        intArrayOf(0, 7388), intArrayOf(12, 7438),
+        intArrayOf(13, 7650), intArrayOf(14, 7800),
+        intArrayOf(15, 7325), intArrayOf(16, 7438),
+
+        intArrayOf(4, 7500), intArrayOf(3, 7275),
+        intArrayOf(2, 7200), intArrayOf(1, 7612),
+        intArrayOf(0, 7500), intArrayOf(12, 7500),
+        intArrayOf(13, 7625), intArrayOf(14, 7800),
+        intArrayOf(15, 7275), intArrayOf(16, 7525),
+
+        intArrayOf(4, 7525), intArrayOf(3, 7375),
+        intArrayOf(2, 7200), intArrayOf(1, 7700),
+        intArrayOf(0, 7550), intArrayOf(12, 7512),
+        intArrayOf(13, 7438), intArrayOf(14, 7675),
+        intArrayOf(15, 7275), intArrayOf(16, 7550),
+
+        intArrayOf(4, 7562), intArrayOf(3, 7350),
+        intArrayOf(2, 7200), intArrayOf(1, 7675),
+        intArrayOf(0, 7575), intArrayOf(12, 7662),
+        intArrayOf(13, 7575), intArrayOf(14, 7925),
+        intArrayOf(15, 7250), intArrayOf(16, 7575),
+
+        intArrayOf(4, 7562), intArrayOf(3, 7350),
+        intArrayOf(2, 7200), intArrayOf(1, 7675),
         intArrayOf(0, 7562), intArrayOf(12, 7660),
         intArrayOf(13, 7875), intArrayOf(14, 8050),
         intArrayOf(15, 7300), intArrayOf(16, 7612),
