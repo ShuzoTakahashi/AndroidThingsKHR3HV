@@ -6,8 +6,13 @@ import android.util.Log
 import com.google.android.things.pio.Gpio
 import com.google.android.things.pio.PeripheralManager
 import com.google.android.things.pio.UartDevice
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 import kotlin.experimental.or
+import java.io.BufferedReader
+import java.io.FileReader
+
 
 /**
  * Created by shuzo on 2018/03/07.
@@ -16,6 +21,7 @@ import kotlin.experimental.or
 class SupportSerialServo(manager: PeripheralManager, private val handler: Handler) {
 
     private var servoChain: UartDevice? = null
+    private var motionJson: JSONObject? = null
     private var enPin: Gpio = manager.openGpio("BCM4") //送受信切り替えピン HIGHで送信,LOWで受信
     private var ioThread: HandlerThread = HandlerThread("ioThread")
     private var ioHandler: Handler
@@ -24,6 +30,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
     init {
         ioThread.start()
         ioHandler = Handler(ioThread.looper)
+        motionJson = getMotionJson("/app/src/main/res/values/motion.json")
         try {
             servoChain = manager.openUartDevice("UART0").also { servoChain ->
                 // TODO: プロパティ形式で代入できないのはなぜ？
@@ -36,6 +43,24 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         } catch (e: IOException) {
             Log.e(tag, "Unable to open UART device", e)
             handler.sendMessage(handler.obtainMessage(MSG_UART_IOEXCEPTION))
+        }
+    }
+
+    //　motion.jsonを読み込んでJSONObjectを生成して返す
+    private fun getMotionJson(filePath: String): JSONObject? {
+        return try {
+            val builder = StringBuilder()
+            BufferedReader(FileReader(filePath)).use { reader ->
+                var string = reader.readLine()
+                while (string != null) {
+                    builder.append(string + System.getProperty("line.separator")) // +後ろのやつは環境に合わせて適切な改行コードを入れてくれる
+                    string = reader.readLine()
+                }
+            }
+            JSONObject(builder.toString())
+        } catch (e: JSONException) {
+            handler.sendMessage(handler.obtainMessage(MSG_JSON_FILE_OPEN_FAILED))
+            null
         }
     }
 
@@ -123,28 +148,12 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
 
     fun motionCmd(cmd: Int) {
         when (cmd) {
-            KHR_CMD_WALK -> {
-                for (pos in ACTION_WALK) {
-                    toPosData(pos[0], pos[1])
-                    Thread.sleep(100)
-                }
-            }
-
-            KHR_CMD_TRUN_RIGHT -> {
-                for (pos in ACTION_TURN_RIGHT) {
-                    toPosData(pos[0], pos[1])
-                }
-            }
-
-            KHR_CMD_TURN_LEFT -> {
-                for (pos in ACTION_TURN_LEFT) {
-                    toPosData(pos[0], pos[1])
-                }
-            }
-
-            KHR_CMD_BACK -> {
-                for (pos in ACTION_BACK) {
-                    toPosData(pos[0], pos[1])
+            KHR_CMD_HELLO -> {
+                val posDataArrays = motionJson?.getJSONArray("MOTION_HELLO")
+                for (i in 0..posDataArrays?.length()!!) {
+                    val posData = posDataArrays.getJSONObject(i)
+                    toRotate(posData.getInt("id"), posData.getInt("rotate"))
+                    Thread.sleep(posData.getLong("sleep"))
                 }
             }
         }
