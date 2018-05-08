@@ -1,5 +1,6 @@
 package com.example.shuzo.androidthingskhr3hv
 
+import android.nfc.Tag
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
@@ -30,7 +31,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
     init {
         ioThread.start()
         ioHandler = Handler(ioThread.looper)
-        motionJson = getMotionJson("/app/src/main/res/values/motion.json")
+        motionJson = getMotionJson("./motion.json")
         try {
             servoChain = manager.openUartDevice("UART0").also { servoChain ->
                 // TODO: プロパティ形式で代入できないのはなぜ？
@@ -59,6 +60,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
             }
             JSONObject(builder.toString())
         } catch (e: JSONException) {
+            Log.e(tag,"JSONException")
             handler.sendMessage(handler.obtainMessage(MSG_JSON_FILE_OPEN_FAILED))
             null
         }
