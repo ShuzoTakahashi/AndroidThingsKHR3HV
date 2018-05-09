@@ -35,7 +35,7 @@ class MainActivity : Activity() {
 
         val manager = PeripheralManager.getInstance()
         Log.d(TAG,manager.uartDeviceList.toString())
-        serialServo = SupportSerialServo(manager, uiHandler)
+        serialServo = SupportSerialServo(manager, uiHandler,this)
         //(0..16).forEach { serialServo.toPosData(it, 7500+ NEUTRAL[it]) }
         serialServo.motionCmd(KHR_CMD_HELLO)
         //Log.d(TAG,serialServo.getAllPos().toString())
