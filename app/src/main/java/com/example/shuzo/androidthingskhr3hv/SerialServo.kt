@@ -1,7 +1,6 @@
 package com.example.shuzo.androidthingskhr3hv
 
 import android.content.Context
-import android.nfc.Tag
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
@@ -13,7 +12,6 @@ import org.json.JSONObject
 import java.io.IOException
 import kotlin.experimental.or
 import java.io.BufferedReader
-import java.io.FileReader
 import java.io.InputStreamReader
 
 
@@ -149,16 +147,17 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         toPosData(id, pos)
     }
 
-    fun motionCmd(cmd: Int) {
-        when (cmd) {
-            KHR_CMD_HELLO -> {
-                val posDataArrays = motionJson?.getJSONArray("MOTION_HELLO")
-                for (i in 0 until posDataArrays?.length()!!) {
-                    val posData = posDataArrays.getJSONObject(i)
-                    toRotate(posData.getInt("id"), posData.getInt("rotate"))
-                    Thread.sleep(posData.getLong("sleep"))
-                }
+    // pos、rotateの選択処理が汚い
+    fun motionCmd(cmd: String, motionType: Int) {
+        val posDataArrays = motionJson?.getJSONArray(cmd)
+        for (i in 0 until posDataArrays?.length()!!) {
+            val posData = posDataArrays.getJSONObject(i)
+            if (motionType == MOTION_TYPE_POS) {
+                toPosData(posData.getInt("id"), posData.getInt("pos"))
+            } else if (motionType == MOTION_TYPE_ROTATE) {
+                toRotate(posData.getInt("id"), posData.getInt("rotate"))
             }
+            Thread.sleep(posData.getLong("sleep"))
         }
     }
 

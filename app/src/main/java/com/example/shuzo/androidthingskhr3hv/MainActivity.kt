@@ -37,7 +37,8 @@ class MainActivity : Activity() {
         Log.d(TAG,manager.uartDeviceList.toString())
         serialServo = SupportSerialServo(manager, uiHandler,this)
         //(0..16).forEach { serialServo.toPosData(it, 7500+ NEUTRAL[it]) }
-        serialServo.motionCmd(KHR_CMD_HELLO)
+        serialServo.motionCmd(KHR_MOTION_NEUTRAL, MOTION_TYPE_POS)
+        serialServo.motionCmd(KHR_MOTION_HELLO, MOTION_TYPE_ROTATE)
         //Log.d(TAG,serialServo.getAllPos().toString())
     }
 

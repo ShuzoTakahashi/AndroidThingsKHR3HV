@@ -42,7 +42,7 @@ class ComTcpClient(ip: String, port: Int, val uiHandler: Handler) {
     }
 
     // TODO : リネーム
-    fun action(func: (OutputStream, InputStream) -> Unit) {
+    fun actionInOut(func: (OutputStream, InputStream) -> Unit) {
         try {
             if (socket.isConnected) {
                 tcpHandler.post { func(socket.outputStream, socket.inputStream) }
