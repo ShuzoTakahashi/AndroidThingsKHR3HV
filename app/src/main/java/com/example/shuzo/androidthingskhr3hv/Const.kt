@@ -18,7 +18,6 @@ const val KHR_MOTION_NEUTRAL ="MOTION_NEUTRAL"
 const val MOTION_TYPE_POS = 0x55
 const val MOTION_TYPE_ROTATE = 0x66
 
-
 const val BAUD_RATE = 115200
 const val DATA_BITS = 8
 const val STOP_BITS = 1
@@ -26,15 +25,8 @@ const val STOP_BITS = 1
 const val IP_ADDR = "192.168.43.181"
 const val PORT = 55555
 const val RECV_SIZE = 4
-
-const val MSG_CONNECT_SUCCESSFULLY = 11
-const val MSG_CONNECT_FAILD = -11
-const val MSG_SCAN_BT_DEVICE = 1221
 const val FOUND_DEVICE_NAME = "DESKTOP-9NOMLFM"
 
 const val BLUETOOTH_SDP_NAME = "AndroidThingsKHR3HV"
 val BLUETOOTH_UUID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!!
 //シリアルは00001101-0000-1000-8000-00805F9B34FB
-
-//TODO リネーム
-val NEUTRAL: Array<Int> = arrayOf(0, 568, 1707, 0, 0, -2686, 2634, 1428, 383, -1428, -2634, 2686, 0, 0, -1707, -568, 0)

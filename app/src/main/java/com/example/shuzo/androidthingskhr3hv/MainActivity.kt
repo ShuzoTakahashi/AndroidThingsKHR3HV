@@ -37,11 +37,14 @@ class MainActivity : Activity() {
         Log.d(TAG,manager.uartDeviceList.toString())
         serialServo = SupportSerialServo(manager, uiHandler,this)
         serialServo.motionCmd(KHR_MOTION_NEUTRAL, MOTION_TYPE_POS)
+        serialServo.delay(1000)
         serialServo.motionCmd(KHR_MOTION_HELLO, MOTION_TYPE_ROTATE)
+        serialServo.delay(1000)
+        serialServo.motionCmd(KHR_MOTION_NEUTRAL, MOTION_TYPE_POS)
     }
 
-    // TODO : リネーム
-    fun recvServoCmd() {
+    // TODO : 要テスト
+    fun recvServoMotion() {
         comBluetoothServer.actionInOut { _, inputStream ->
             val reader = BufferedReader(InputStreamReader(inputStream))
             while (true) {

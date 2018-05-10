@@ -14,7 +14,6 @@ import kotlin.experimental.or
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-
 /**
  * Created by shuzo on 2018/03/07.
  */
@@ -46,26 +45,6 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
             null
         }
     }
-
-    //　motion.jsonを読み込んでJSONObjectを生成して返す
-    private fun getMotionJson(): JSONObject? {
-        return try {
-            val builder = StringBuilder()
-            BufferedReader(InputStreamReader(context.resources.assets.open("motion.json"))).use { reader ->
-                var string = reader.readLine()
-                while (string != null) {
-                    builder.append(string + System.getProperty("line.separator")) // +後ろのやつは環境に合わせて適切な改行コードを入れてくれる
-                    string = reader.readLine()
-                }
-            }
-            JSONObject(builder.toString())
-        } catch (e: JSONException) {
-            Log.e(tag, "JSONException")
-            handler.sendMessage(handler.obtainMessage(MSG_JSON_FILE_OPEN_FAILED))
-            null
-        }
-    }
-
 
     // FIXME: 何故か取得できない...。C++の実装を見ても同様のソースが書いてあるのに...
     fun getPos(id: Int): Int {
@@ -106,11 +85,11 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
 
     // ポジションデータからサーボに角度を変える命令を出す
     // delay秒後にサーボを動かす
-    fun toPos(id: Int, PosData: Int, delay: Long = 0) {
+    fun toPos(id: Int, PosData: Int) {
         try {
             if (servoChain != null) {
 
-                uartHandler.postDelayed({
+                uartHandler.post {
                     enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHにセット(送信)
                     val cmd = ByteArray(3)
                     cmd[0] = 0x80.toByte() or id.toByte() // 0x80でポジション
@@ -124,7 +103,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
                     val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
                     Log.d("id", id.toString())
                     Log.d("pos", afPos.toString())
-                }, delay)
+                }
             } else {
                 Log.e(tag, "Unable to open UART device")
                 throw IllegalStateException()
@@ -136,10 +115,29 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
     }
 
     // 中心を0°と見たときの角度から命令を出す
-    fun toRotate(id: Int, rotate: Int, delay: Long = 0) {
+    fun toRotate(id: Int, rotate: Int) {
         val parRotate: Double = (rotate.toDouble() / 270.0) + 0.5
         val pos = ((parRotate * 8000) + 3500).toInt()
-        toPos(id, pos, delay)
+        toPos(id, pos)
+    }
+
+    //　motion.jsonを読み込んでJSONObjectを生成して返す
+    private fun getMotionJson(): JSONObject? {
+        return try {
+            val builder = StringBuilder()
+            BufferedReader(InputStreamReader(context.resources.assets.open("motion.json"))).use { reader ->
+                var string = reader.readLine()
+                while (string != null) {
+                    builder.append(string + System.getProperty("line.separator")) // +後ろのやつは環境に合わせて適切な改行コードを入れてくれる
+                    string = reader.readLine()
+                }
+            }
+            JSONObject(builder.toString())
+        } catch (e: JSONException) {
+            Log.e(tag, "JSONException")
+            handler.sendMessage(handler.obtainMessage(MSG_JSON_FILE_OPEN_FAILED))
+            null
+        }
     }
 
     // TODO:pos、rotateの判別処理が適切ではない気がする。要修正。
@@ -148,12 +146,15 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         for (i in 0 until posDataArrays?.length()!!) {
             val posData = posDataArrays.getJSONObject(i)
             if (motionType == MOTION_TYPE_POS) {
-                toPos(posData.getInt("id"), posData.getInt("pos"), posData.getLong("sleep"))
+                toPos(posData.getInt("id"), posData.getInt("pos"))
             } else if (motionType == MOTION_TYPE_ROTATE) {
-                toRotate(posData.getInt("id"), posData.getInt("rotate"), posData.getLong("sleep"))
+                toRotate(posData.getInt("id"), posData.getInt("rotate"))
             }
+            delay(posData.getLong("delay"))
         }
     }
+
+    fun delay(time: Long) = uartHandler.post { Thread.sleep(time) }
 
     fun close() {
         if (servoChain != null) {
