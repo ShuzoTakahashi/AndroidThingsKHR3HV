@@ -12,7 +12,7 @@ class MainActivity : Activity() {
 
     private lateinit var serialServo: SupportSerialServo
     private val TAG: String = "KHR3HV"
-    private lateinit var comBluetoothServer: ComBluetoothServer
+    private lateinit var comBluetoothServer:ComTcpClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,15 +36,13 @@ class MainActivity : Activity() {
         val manager = PeripheralManager.getInstance()
         Log.d(TAG,manager.uartDeviceList.toString())
         serialServo = SupportSerialServo(manager, uiHandler,this)
-        //(0..16).forEach { serialServo.toPosData(it, 7500+ NEUTRAL[it]) }
         serialServo.motionCmd(KHR_MOTION_NEUTRAL, MOTION_TYPE_POS)
         serialServo.motionCmd(KHR_MOTION_HELLO, MOTION_TYPE_ROTATE)
-        //Log.d(TAG,serialServo.getAllPos().toString())
     }
 
     // TODO : リネーム
     fun recvServoCmd() {
-        comBluetoothServer.action { _, inputStream ->
+        comBluetoothServer.actionInOut { _, inputStream ->
             val reader = BufferedReader(InputStreamReader(inputStream))
             while (true) {
 

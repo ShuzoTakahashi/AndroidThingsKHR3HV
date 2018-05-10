@@ -24,17 +24,16 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
     private var servoChain: UartDevice? = null
     private var motionJson: JSONObject? = null
     private var enPin: Gpio = manager.openGpio("BCM4") //送受信切り替えピン HIGHで送信,LOWで受信
-    private var ioThread: HandlerThread = HandlerThread("ioThread")
-    private var ioHandler: Handler
+    private var uartThread: HandlerThread = HandlerThread("uartThread")
+    private var uartHandler: Handler
     private val tag = SupportSerialServo::class.java.simpleName
 
     init {
-        ioThread.start()
-        ioHandler = Handler(ioThread.looper)
+        uartThread.start()
+        uartHandler = Handler(uartThread.looper)
         motionJson = getMotionJson()
-        try {
-            servoChain = manager.openUartDevice("UART0").also { servoChain ->
-                // TODO: プロパティ形式で代入できないのはなぜ？
+        servoChain = try {
+            manager.openUartDevice("UART0").also { servoChain ->
                 servoChain.setBaudrate(BAUD_RATE) //通信速度
                 servoChain.setDataSize(DATA_BITS) //ビット長
                 servoChain.setParity(UartDevice.PARITY_EVEN) //偶数パリティ
@@ -44,6 +43,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         } catch (e: IOException) {
             Log.e(tag, "Unable to open UART device", e)
             handler.sendMessage(handler.obtainMessage(MSG_UART_IOEXCEPTION))
+            null
         }
     }
 
@@ -66,15 +66,8 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         }
     }
 
-    fun getAllPos(): ArrayList<Int> {
-        val posList = ArrayList<Int>(17)
 
-        (0..16).forEach { id ->
-            posList.add(getPos(id))
-        }
-        return posList
-    }
-
+    // FIXME: 何故か取得できない...。C++の実装を見ても同様のソースが書いてあるのに...
     fun getPos(id: Int): Int {
         val readPosBytes = ByteArray(4)
         val writeCmdBytes = ByteArray(2)
@@ -82,7 +75,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
 
         try {
             if (servoChain != null) {
-                ioHandler.post {
+                uartHandler.post {
 
                     writeCmdBytes[0] = (0xA0 or id).toByte()
                     writeCmdBytes[1] = 0x05.toByte()
@@ -111,11 +104,13 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         return rePos
     }
 
-    fun toPosData(id: Int, PosData: Int) {
+    // ポジションデータからサーボに角度を変える命令を出す
+    // delay秒後にサーボを動かす
+    fun toPos(id: Int, PosData: Int, delay: Long = 0) {
         try {
             if (servoChain != null) {
 
-                ioHandler.post {
+                uartHandler.postDelayed({
                     enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHにセット(送信)
                     val cmd = ByteArray(3)
                     cmd[0] = 0x80.toByte() or id.toByte() // 0x80でポジション
@@ -129,7 +124,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
                     val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
                     Log.d("id", id.toString())
                     Log.d("pos", afPos.toString())
-                }
+                }, delay)
             } else {
                 Log.e(tag, "Unable to open UART device")
                 throw IllegalStateException()
@@ -140,24 +135,23 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         }
     }
 
-    fun toRotate(id: Int, rotate: Int) {
-        //中心を0°として扱う
+    // 中心を0°と見たときの角度から命令を出す
+    fun toRotate(id: Int, rotate: Int, delay: Long = 0) {
         val parRotate: Double = (rotate.toDouble() / 270.0) + 0.5
         val pos = ((parRotate * 8000) + 3500).toInt()
-        toPosData(id, pos)
+        toPos(id, pos, delay)
     }
 
-    // pos、rotateの選択処理が汚い
+    // TODO:pos、rotateの判別処理が適切ではない気がする。要修正。
     fun motionCmd(cmd: String, motionType: Int) {
         val posDataArrays = motionJson?.getJSONArray(cmd)
         for (i in 0 until posDataArrays?.length()!!) {
             val posData = posDataArrays.getJSONObject(i)
             if (motionType == MOTION_TYPE_POS) {
-                toPosData(posData.getInt("id"), posData.getInt("pos"))
+                toPos(posData.getInt("id"), posData.getInt("pos"), posData.getLong("sleep"))
             } else if (motionType == MOTION_TYPE_ROTATE) {
-                toRotate(posData.getInt("id"), posData.getInt("rotate"))
+                toRotate(posData.getInt("id"), posData.getInt("rotate"), posData.getLong("sleep"))
             }
-            Thread.sleep(posData.getLong("sleep"))
         }
     }
 
