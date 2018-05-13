@@ -2,47 +2,47 @@
   "MOTION_HELLO": [
     {
       "id": 13,
-      "rotate": 90,
+      "degree": 90,
       "delay": 0
     },
     {
       "id": 3,
-      "rotate": -90,
+      "degree": -90,
       "delay": 1000
     },
     {
       "id": 9,
-      "rotate": 45,
+      "degree": 45,
       "delay": 0
     },
     {
       "id": 10,
-      "rotate": 0,
+      "degree": 0,
       "delay": 0
     },
     {
       "id": 11,
-      "rotate": -10,
+      "degree": -10,
       "delay": 800
     },
     {
       "id": 11,
-      "rotate": 90,
+      "degree": 90,
       "delay": 500
     },
     {
       "id": 11,
-      "rotate": -10,
+      "degree": -10,
       "delay": 500
     },
     {
       "id": 11,
-      "rotate": 90,
+      "degree": 90,
       "delay": 500
     },
     {
       "id": 11,
-      "rotate": -10,
+      "degree": -10,
       "delay": 500
     }
   ],

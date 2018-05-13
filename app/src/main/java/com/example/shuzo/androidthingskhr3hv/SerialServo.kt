@@ -18,19 +18,19 @@ import java.io.InputStreamReader
  * Created by shuzo on 2018/03/07.
  */
 
-class SupportSerialServo(manager: PeripheralManager, private val handler: Handler, private val context: Context) {
+class ICSSerialServo(manager: PeripheralManager, private val handler: Handler, private val context: Context) {
 
     private var servoChain: UartDevice? = null
     private var motionJson: JSONObject? = null
     private var enPin: Gpio = manager.openGpio("BCM4") //送受信切り替えピン HIGHで送信,LOWで受信
     private var uartThread: HandlerThread = HandlerThread("uartThread")
     private var uartHandler: Handler
-    private val tag = SupportSerialServo::class.java.simpleName
+    private val tag = ICSSerialServo::class.java.simpleName
 
     init {
         uartThread.start()
         uartHandler = Handler(uartThread.looper)
-        motionJson = getMotionJson()
+        motionJson = getMotionJson("motion.json")
         servoChain = try {
             manager.openUartDevice("UART0").also { servoChain ->
                 servoChain.setBaudrate(BAUD_RATE) //通信速度
@@ -69,7 +69,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
                     rePos = ((readPosBytes[2].toInt() shl 7) and 0x3F80) or (readPosBytes[3].toInt() and 0x007f)
 
                     // Log 出力
-                    Log.d("id", id.toString())
+                    Log.d("servoIDs", id.toString())
                     Log.d("pos", rePos.toString())
                 }
             } else {
@@ -83,16 +83,15 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         return rePos
     }
 
-    // ポジションデータからサーボに角度を変える命令を出す
-    // delay秒後にサーボを動かす
-    fun toPos(id: Int, PosData: Int) {
+    // ポジションデータからサーボを動作させる
+    fun setPos(id: Int, PosData: Int) {
         try {
             if (servoChain != null) {
 
                 uartHandler.post {
                     enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHにセット(送信)
                     val cmd = ByteArray(3)
-                    cmd[0] = 0x80.toByte() or id.toByte() // 0x80でポジション
+                    cmd[0] = 0x80.toByte() or id.toByte() // 0x80でポジションデータからサーボの動作
                     cmd[1] = ((PosData shr 7) and 0x007f).toByte() //POS_H
                     cmd[2] = (PosData and 0x007F).toByte() // POS_L
 
@@ -101,7 +100,7 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
 
                     // Log 出力
                     val afPos = (cmd[1].toInt() shl 7) or cmd[2].toInt()
-                    Log.d("id", id.toString())
+                    Log.d("servoIDs", id.toString())
                     Log.d("pos", afPos.toString())
                 }
             } else {
@@ -114,18 +113,18 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         }
     }
 
-    // 中心を0°と見たときの角度から命令を出す
-    fun toRotate(id: Int, rotate: Int) {
-        val parRotate: Double = (rotate.toDouble() / 270.0) + 0.5
-        val pos = ((parRotate * 8000) + 3500).toInt()
-        toPos(id, pos)
+    // 中心を0°と見たときの角度からサーボを動作させる
+    fun setDegree(id: Int, degree: Int) {
+        val parDegree: Double = (degree.toDouble() / 270.0) + 0.5
+        val pos = ((parDegree * 8000) + 3500).toInt()
+        setPos(id, pos)
     }
 
     //　motion.jsonを読み込んでJSONObjectを生成して返す
-    private fun getMotionJson(): JSONObject? {
+    private fun getMotionJson(fileName:String): JSONObject? {
         return try {
             val builder = StringBuilder()
-            BufferedReader(InputStreamReader(context.resources.assets.open("motion.json"))).use { reader ->
+            BufferedReader(InputStreamReader(context.resources.assets.open(fileName))).use { reader ->
                 var string = reader.readLine()
                 while (string != null) {
                     builder.append(string + System.getProperty("line.separator")) // +後ろのやつは環境に合わせて適切な改行コードを入れてくれる
@@ -140,15 +139,15 @@ class SupportSerialServo(manager: PeripheralManager, private val handler: Handle
         }
     }
 
-    // TODO:pos、rotateの判別処理が適切ではない気がする。要修正。
+    // TODO:pos、degreeの判別処理が適切ではない気がする。要修正。
     fun motionCmd(cmd: String, motionType: Int) {
         val posDataArrays = motionJson?.getJSONArray(cmd)
         for (i in 0 until posDataArrays?.length()!!) {
             val posData = posDataArrays.getJSONObject(i)
             if (motionType == MOTION_TYPE_POS) {
-                toPos(posData.getInt("id"), posData.getInt("pos"))
-            } else if (motionType == MOTION_TYPE_ROTATE) {
-                toRotate(posData.getInt("id"), posData.getInt("rotate"))
+                setPos(posData.getInt("servoIDs"), posData.getInt("pos"))
+            } else if (motionType == MOTION_TYPE_DEGREE) {
+                setDegree(posData.getInt("servoIDs"), posData.getInt("degree"))
             }
             delay(posData.getLong("delay"))
         }
