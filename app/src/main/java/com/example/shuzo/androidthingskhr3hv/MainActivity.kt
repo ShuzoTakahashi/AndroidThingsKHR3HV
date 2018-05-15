@@ -22,8 +22,6 @@ class MainActivity : Activity() {
             override fun handleMessage(msg: Message?) {
                 when (msg!!.what) {
 
-                // ・・・
-
                     MSG_CONNECTION_SUCCESS -> {
                         //recvServoCmd()
                     }
@@ -38,7 +36,7 @@ class MainActivity : Activity() {
 
         val manager = PeripheralManager.getInstance()
         Log.d(tag, manager.uartDeviceList.toString())
-        serialServo = ICSSerialServo(manager, uiHandler, this)
+        serialServo = ICSSerialServo(manager, uiHandler, this@MainActivity)
 
         val adapter = object : ServoCardRecyclerAdapter((0..16).toList()) {
             override var onSeekBarProgressChange = { _: SeekBar?, progress: Int, _: Boolean, position: Int, textResult: TextView ->
@@ -48,15 +46,14 @@ class MainActivity : Activity() {
             }
         }
         servoRecycler.also { recyclerView ->
-            recyclerView.layoutManager = GridLayoutManager(this, 2)
+            recyclerView.layoutManager = GridLayoutManager(this@MainActivity, 2)
             recyclerView.adapter = adapter
         }
-
-        /*serialServo.motionCmd(KHR_MOTION_NEUTRAL, MOTION_TYPE_POS)
-        serialServo.delay(1000)
-        serialServo.motionCmd(KHR_MOTION_HELLO, MOTION_TYPE_DEGREE)
-        serialServo.delay(1000)
-        serialServo.motionCmd(KHR_MOTION_NEUTRAL, MOTION_TYPE_POS)*/
+//        serialServo.motionCmd(KHR_MOTION_NEUTRAL, MOTION_TYPE_POS)
+//        serialServo.delay(1000)
+//        serialServo.motionCmd(KHR_MOTION_HELLO, MOTION_TYPE_DEGREE)
+//        serialServo.delay(1000)
+//        serialServo.motionCmd(KHR_MOTION_NEUTRAL, MOTION_TYPE_POS)
     }
 
 

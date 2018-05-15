@@ -145,9 +145,9 @@ class ICSSerialServo(manager: PeripheralManager, private val handler: Handler, p
         for (i in 0 until posDataArrays?.length()!!) {
             val posData = posDataArrays.getJSONObject(i)
             if (motionType == MOTION_TYPE_POS) {
-                setPos(posData.getInt("servoIDs"), posData.getInt("pos"))
+                setPos(posData.getInt("id"), posData.getInt("pos"))
             } else if (motionType == MOTION_TYPE_DEGREE) {
-                setDegree(posData.getInt("servoIDs"), posData.getInt("degree"))
+                setDegree(posData.getInt("id"), posData.getInt("degree"))
             }
             delay(posData.getLong("delay"))
         }
