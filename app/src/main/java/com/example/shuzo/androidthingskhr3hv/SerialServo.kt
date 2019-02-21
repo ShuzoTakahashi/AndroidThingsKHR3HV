@@ -2,42 +2,44 @@ package com.example.shuzo.androidthingskhr3hv
 
 import android.content.Context
 import android.os.Handler
-import android.os.HandlerThread
 import android.util.Log
 import com.google.android.things.pio.Gpio
 import com.google.android.things.pio.PeripheralManager
 import com.google.android.things.pio.UartDevice
+import kotlinx.coroutines.*
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import kotlin.experimental.or
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Created by shuzo on 2018/03/07.
  */
 
-class ICSSerialServo(manager: PeripheralManager, private val handler: Handler, private val context: Context) {
+class IcsServoManager(manager: PeripheralManager, private val handler: Handler, private val context: Context) : CoroutineScope {
+
+    private val job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = job
 
     private var servoChain: UartDevice? = null
     private var motionJson: JSONObject? = null
     private var enPin: Gpio = manager.openGpio("BCM4") //送受信切り替えピン HIGHで送信,LOWで受信
-    private var uartThread: HandlerThread = HandlerThread("uartThread")
-    private var uartHandler: Handler
-    private val tag = ICSSerialServo::class.java.simpleName
+    private val tag = IcsServoManager::class.java.simpleName
+
 
     init {
-        uartThread.start()
-        uartHandler = Handler(uartThread.looper)
         motionJson = getMotionJson("motion.json")
         servoChain = try {
-            manager.openUartDevice("UART0").also { servoChain ->
-                servoChain.setBaudrate(BAUD_RATE) //通信速度
-                servoChain.setDataSize(DATA_BITS) //ビット長
-                servoChain.setParity(UartDevice.PARITY_EVEN) //偶数パリティ
-                servoChain.setStopBits(STOP_BITS) //ストップビット
-                servoChain.setHardwareFlowControl(UartDevice.HW_FLOW_CONTROL_NONE) //フロー制御なし
+            manager.openUartDevice("UART0").apply {
+                setBaudrate(BAUD_RATE) //通信速度
+                setDataSize(DATA_BITS) //ビット長
+                setParity(UartDevice.PARITY_EVEN) //偶数パリティ
+                setStopBits(STOP_BITS) //ストップビット
+                setHardwareFlowControl(UartDevice.HW_FLOW_CONTROL_NONE) //フロー制御なし
             }
         } catch (e: IOException) {
             Log.e(tag, "Unable to open UART device", e)
@@ -54,7 +56,7 @@ class ICSSerialServo(manager: PeripheralManager, private val handler: Handler, p
 
         try {
             if (servoChain != null) {
-                uartHandler.post {
+                runBlocking {
 
                     writeCmdBytes[0] = (0xA0 or id).toByte()
                     writeCmdBytes[1] = 0x05.toByte()
@@ -88,7 +90,7 @@ class ICSSerialServo(manager: PeripheralManager, private val handler: Handler, p
         try {
             if (servoChain != null) {
 
-                uartHandler.post {
+                runBlocking {
                     enPin.setDirection(Gpio.DIRECTION_OUT_INITIALLY_HIGH) // HIGHにセット(送信)
                     val cmd = ByteArray(3)
                     cmd[0] = 0x80.toByte() or id.toByte() // 0x80でポジションデータからサーボの動作
@@ -121,7 +123,7 @@ class ICSSerialServo(manager: PeripheralManager, private val handler: Handler, p
     }
 
     //　motion.jsonを読み込んでJSONObjectを生成して返す
-    private fun getMotionJson(fileName:String): JSONObject? {
+    private fun getMotionJson(fileName: String): JSONObject? {
         return try {
             val builder = StringBuilder()
             BufferedReader(InputStreamReader(context.resources.assets.open(fileName))).use { reader ->
@@ -153,7 +155,9 @@ class ICSSerialServo(manager: PeripheralManager, private val handler: Handler, p
         }
     }
 
-    fun delay(time: Long) = uartHandler.post { Thread.sleep(time) }
+    fun delay(time: Long) = runBlocking {
+       delay(time)
+    }
 
     fun close() {
         if (servoChain != null) {

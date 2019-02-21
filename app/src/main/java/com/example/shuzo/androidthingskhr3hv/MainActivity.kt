@@ -11,7 +11,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : Activity() {
 
-    private lateinit var serialServo: ICSSerialServo
+    private lateinit var serialServo: IcsServoManager
     private val tag: String = MainActivity::class.java.simpleName
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,7 +36,7 @@ class MainActivity : Activity() {
 
         val manager = PeripheralManager.getInstance()
         Log.d(tag, manager.uartDeviceList.toString())
-        serialServo = ICSSerialServo(manager, uiHandler, this@MainActivity)
+        serialServo = IcsServoManager(manager, uiHandler, this@MainActivity)
 
         val adapter = object : ServoCardRecyclerAdapter((0..16).toList()) {
             override var onSeekBarProgressChange = { _: SeekBar?, progress: Int, _: Boolean, position: Int, textResult: TextView ->
